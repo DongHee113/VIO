@@ -12,9 +12,7 @@ public:
 
 	std::vector<cv::Point2f> prev_features;
 	std::vector<cv::Point2f> curr_features;
-	std::vector<cv::Point2f> next_features;
 
-	std::vector<cv::Point2f> undistorted_prev_features;
 	std::vector<cv::Point2f> undistorted_curr_features;
 
 	std::vector<cv::Point2f> velocity;
@@ -27,10 +25,8 @@ public:
 	std::pair<int, Eigen::Matrix<double, 7, 1>> trackFeatures(aiur::sensor::data::camera::Image img, aiur::base::time::Millisecond time);
 	cv::Mat getTrackImage();
 private:
-	void readImage(cv::Mat &img, double time);
 	void tracking();
 	void detecting();
-	void outlierRejection();
 	void setMask();
 	void addNewFeatures();
 	void undistortPoints();
@@ -40,7 +36,6 @@ private:
 
 	cv::Mat prev_img_;
 	cv::Mat curr_img_;
-	cv::Mat next_img_;
 
 	FeaturePoints feature_points_;
 	std::vector<cv::Point2f> new_features_;
