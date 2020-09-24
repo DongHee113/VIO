@@ -1,12 +1,27 @@
+#include <iostream>
+#include <thread>
 #include "feature_tracker.h"
 
+FeatureTracker feature_tracker;
+
+void imgCallback() {
+	//lock
+	//put img in the buffer;
+	//unlock
+}
+
+void tracking() {
+	// ros img to auir img
+	std::pair<int, Eigen::Matrix<double, 7, 1>> features;
+	features = feature_tracker.trackFeatures(img, time);
+	if (SHOW_TRACK) {
+		cv::Mat image_track = feature_tracker.getTrackImage();
+		pubTrackImage(image_track);
+	}
+}
+
 int main() {
-    FeatureTracker feature_tracker;
 
-    feature_tracker.trackFeatures(img, time);
 
-    auto features = feature_tracker.getFeatures();
-    auto undistorted_features = feature_tracker.getUndistortedFeatures();
-    auto feature_velocitys = feature_tracker.getFeatureVelocitys();
-    auto feature_ids = feature_tracker.getFeatureIds();
+	std::thread feature_tracking_thread(tracking);
 }
