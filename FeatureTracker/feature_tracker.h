@@ -21,8 +21,9 @@ public:
 class FeatureTracker {
 public:
 	FeatureTracker();
+	FeatureTracker(Parameters &parameter);
 
-	std::pair<int, Eigen::Matrix<double, 7, 1>> trackFeatures(aiur::sensor::data::camera::Image img, aiur::base::time::Millisecond time);
+	std::pair<int, Eigen::Matrix<double, 7, 1>> trackFeatures(cv::Mat &img, double &time);
 	cv::Mat getTrackImage();
 private:
 	void tracking();
@@ -31,6 +32,22 @@ private:
 	void addNewFeatures();
 	void undistortPoints();
 	void calcPointVelocity();
+
+	bool inBorder(const cv::Point2f& pt);
+
+	const int ROW;
+	const int COL;
+
+	const double FOCAL_LENGTH_X;
+	const double FOCAL_LENGTH_Y;
+
+	const double CENTER_X;
+	const double CENTER_Y;
+
+	const int MAX_FEATURE_NUM;
+	const int MIN_FEATURE_DIST;
+
+	const bool SHOW_TRACK;
 
 	cv::Mat mask_;
 

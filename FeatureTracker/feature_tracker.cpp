@@ -2,19 +2,57 @@
 
 int id_num = 0;
 
-Eigen::Vector3d liftProjective(cv::Point2f& p) {
+void distortion(Eigen::Vector2d p_u, Eigen::Vector2d &d_u) {
+	double k1 = -0.28340811;
+	double k2 = 0.07395907;
+	double p1 = 0.00019359;
+	double p2 = 1.76187114e-05;
+
+	double mx2_u, my2_u, mxy_u, rho2_u, rad_dist_u;
+
+	mx2_u = p_u(0) * p_u(0);
+	my2_u = p_u(1) * p_u(1);
+	mxy_u = p_u(0) * p_u(1);
+	rho2_u = mx2_u + my2_u;
+	rad_dist_u = k1 * rho2_u + k2 * rho2_u * rho2_u;
+	d_u << p_u(0) * rad_dist_u + 2.0 * p1 * mxy_u + p2 * (rho2_u + 2.0 * mx2_u),
+		p_u(1)* rad_dist_u + 2.0 * p2 * mxy_u + p1 * (rho2_u + 2.0 * my2_u);
+}
+
+Eigen::Vector3d liftProjective(cv::Point2f& p, const double& focal_length_x, const double& focal_length_y, const double& center_x, const double& center_y) {
 	Eigen::Vector3d v;
 
-	double mx_d = p.x / FOCAL_LENGTH_X - CENTER_X;
-	double my_d = p.y / FOCAL_LENGTH_Y - CENTER_Y;
+	double mx_d = (p.x / focal_length_x) - center_x;
+	double my_d = (p.y / focal_length_y) - center_y;
 
-	if (1 /*no distortion*/) {
-		v << mx_d, my_d, 1.0;
+	double mx_u, my_u;
+
+	if (0 /*no distortion*/) {
+		mx_u = mx_d;
+		my_u = my_d;
 	}
+	else {
+		int n = 8;
+		Eigen::Vector2d d_u;
+		
+		distortion(Eigen::Vector2d(mx_d, my_d), d_u);
+		// Approximate value
+		mx_u = mx_d - d_u(0);
+		my_u = my_d - d_u(1);
+
+		for (int i = 1; i < n; ++i)
+		{
+			distortion(Eigen::Vector2d(mx_u, my_u), d_u);
+			mx_u = mx_d - d_u(0);
+			my_u = my_d - d_u(1);
+		}
+	}
+
+	v << mx_u, my_u, 1.0;
 
 	return v;
 }
-bool inBorder(const cv::Point2f& pt)
+bool FeatureTracker::inBorder(const cv::Point2f& pt)
 {
 	const int BORDER_SIZE = 1;
 	int img_x = cvRound(pt.x);
@@ -40,17 +78,29 @@ void reduceFeatures(FeaturePoints& f, std::vector<uchar> status)
 	f.curr_features.resize(j);
 }
 
-FeatureTracker::FeatureTracker() {
-	//Read intrinsic parameter
+FeatureTracker::FeatureTracker() : 
+	ROW(0), COL(0),
+	FOCAL_LENGTH_X(0), FOCAL_LENGTH_Y(0),
+	CENTER_X(0), CENTER_Y(0), 
+	MAX_FEATURE_NUM(0), 
+	MIN_FEATURE_DIST(0), 
+	SHOW_TRACK(0) {}
+
+FeatureTracker::FeatureTracker(Parameters &parameter) : 
+	ROW(parameter.ROW), COL(parameter.COL),
+	FOCAL_LENGTH_X(parameter.FOCAL_LENGTH_X), FOCAL_LENGTH_Y(parameter.FOCAL_LENGTH_Y),
+	CENTER_X(parameter.CENTER_X), CENTER_Y(parameter.CENTER_Y),
+	MAX_FEATURE_NUM(parameter.MAX_FEATURE_NUM),
+	MIN_FEATURE_DIST(parameter.MIN_FEATURE_DIST),
+	SHOW_TRACK(parameter.SHOW_TRACK) {}
+
+cv::Mat FeatureTracker::getTrackImage() {
+
 }
 
-cv::Mat getTrackImage() {
-
-}
-
-std::pair<int, Eigen::Matrix<double, 7, 1>> FeatureTracker::trackFeatures(aiur::sensor::data::camera::Image img, aiur::base::time::Millisecond time) {
-	curr_img_ = img;//Aiur2CV(img);
-	curr_time_ = time;//Aiur2CV(time)
+std::pair<int, Eigen::Matrix<double, 7, 1>> FeatureTracker::trackFeatures(cv::Mat &img, double &time) {
+	curr_img_ = img;
+	curr_time_ = time;
 	
 
 	if (feature_points_.prev_features.size() > 0) {
@@ -151,7 +201,7 @@ void FeatureTracker::undistortPoints() {
 	Eigen::Vector3d projected3d;
 
 	for (size_t i = 0; i < feature_points_.curr_features.size(); i++) {
-		projected3d = liftProjective(feature_points_.curr_features[i]);
+		projected3d = liftProjective(feature_points_.curr_features[i], FOCAL_LENGTH_X, FOCAL_LENGTH_Y, CENTER_X, CENTER_Y);
 		feature_points_.undistorted_curr_features.push_back(cv::Point2f(projected3d.x() / projected3d.z(), projected3d.y() / projected3d.z()));
 	}
 }
