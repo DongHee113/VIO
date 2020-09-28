@@ -10,6 +10,8 @@ struct Parameters {
 	double CENTER_X;
 	double CENTER_Y;
 
+	double DISTORTION[4];
+
 	int MAX_FEATURE_NUM;
 	int MIN_FEATURE_DIST;
 

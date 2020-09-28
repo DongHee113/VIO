@@ -2,28 +2,23 @@
 
 int id_num = 0;
 
-void distortion(Eigen::Vector2d p_u, Eigen::Vector2d &d_u) {
-	double k1 = -0.28340811;
-	double k2 = 0.07395907;
-	double p1 = 0.00019359;
-	double p2 = 1.76187114e-05;
-
+void FeatureTracker::distortion(Eigen::Vector2d p_u, Eigen::Vector2d &d_u) {
 	double mx2_u, my2_u, mxy_u, rho2_u, rad_dist_u;
 
 	mx2_u = p_u(0) * p_u(0);
 	my2_u = p_u(1) * p_u(1);
 	mxy_u = p_u(0) * p_u(1);
 	rho2_u = mx2_u + my2_u;
-	rad_dist_u = k1 * rho2_u + k2 * rho2_u * rho2_u;
-	d_u << p_u(0) * rad_dist_u + 2.0 * p1 * mxy_u + p2 * (rho2_u + 2.0 * mx2_u),
-		p_u(1)* rad_dist_u + 2.0 * p2 * mxy_u + p1 * (rho2_u + 2.0 * my2_u);
+	rad_dist_u = K1 * rho2_u + K2 * rho2_u * rho2_u;
+	d_u << p_u(0) * rad_dist_u + 2.0 * P1 * mxy_u + P2 * (rho2_u + 2.0 * mx2_u),
+		p_u(1)* rad_dist_u + 2.0 * P2 * mxy_u + P1 * (rho2_u + 2.0 * my2_u);
 }
 
-Eigen::Vector3d liftProjective(cv::Point2f& p, const double& focal_length_x, const double& focal_length_y, const double& center_x, const double& center_y) {
+Eigen::Vector3d FeatureTracker::liftProjective(cv::Point2f& p) {
 	Eigen::Vector3d v;
 
-	double mx_d = (p.x / focal_length_x) - center_x;
-	double my_d = (p.y / focal_length_y) - center_y;
+	double mx_d = (p.x / FOCAL_LENGTH_X) - CENTER_X;
+	double my_d = (p.y / FOCAL_LENGTH_Y) - CENTER_Y;
 
 	double mx_u, my_u;
 
@@ -78,21 +73,27 @@ void reduceFeatures(FeaturePoints& f, std::vector<uchar> status)
 	f.curr_features.resize(j);
 }
 
-FeatureTracker::FeatureTracker() : 
+FeatureTracker::FeatureTracker() :
 	ROW(0), COL(0),
 	FOCAL_LENGTH_X(0), FOCAL_LENGTH_Y(0),
-	CENTER_X(0), CENTER_Y(0), 
-	MAX_FEATURE_NUM(0), 
-	MIN_FEATURE_DIST(0), 
-	SHOW_TRACK(0) {}
+	CENTER_X(0), CENTER_Y(0),
+	K1(0), K2(0), P1(0), P2(0),
+	MAX_FEATURE_NUM(0),
+	MIN_FEATURE_DIST(0),
+	SHOW_TRACK(0) {
+	prev_time_ = curr_time_ = 0;
+}
 
 FeatureTracker::FeatureTracker(Parameters &parameter) : 
 	ROW(parameter.ROW), COL(parameter.COL),
 	FOCAL_LENGTH_X(parameter.FOCAL_LENGTH_X), FOCAL_LENGTH_Y(parameter.FOCAL_LENGTH_Y),
 	CENTER_X(parameter.CENTER_X), CENTER_Y(parameter.CENTER_Y),
+	K1(parameter.DISTORTION[0]), K2(parameter.DISTORTION[1]), P1(parameter.DISTORTION[2]), P2(parameter.DISTORTION[3]),
 	MAX_FEATURE_NUM(parameter.MAX_FEATURE_NUM),
 	MIN_FEATURE_DIST(parameter.MIN_FEATURE_DIST),
-	SHOW_TRACK(parameter.SHOW_TRACK) {}
+	SHOW_TRACK(parameter.SHOW_TRACK) {
+	prev_time_ = curr_time_ = 0;
+}
 
 cv::Mat FeatureTracker::getTrackImage() {
 

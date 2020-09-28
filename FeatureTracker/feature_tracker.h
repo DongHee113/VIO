@@ -5,7 +5,7 @@
 
 #include "parameters.h"
 
-class FeaturePoints {
+typedef struct FeaturePoints {
 public:
 	std::vector<int> ids;
 	std::vector<int> track_cnt;
@@ -16,7 +16,7 @@ public:
 	std::vector<cv::Point2f> undistorted_curr_features;
 
 	std::vector<cv::Point2f> velocity;
-};
+}FeaturePoints;
 
 class FeatureTracker {
 public:
@@ -33,6 +33,9 @@ private:
 	void undistortPoints();
 	void calcPointVelocity();
 
+	Eigen::Vector3d liftProjective(cv::Point2f& p);
+	void distortion(Eigen::Vector2d p_u, Eigen::Vector2d& d_u);
+
 	bool inBorder(const cv::Point2f& pt);
 
 	const int ROW;
@@ -43,6 +46,11 @@ private:
 
 	const double CENTER_X;
 	const double CENTER_Y;
+
+	const double K1;
+	const double K2;
+	const double P1;
+	const double P2;
 
 	const int MAX_FEATURE_NUM;
 	const int MIN_FEATURE_DIST;

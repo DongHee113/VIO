@@ -52,11 +52,6 @@ int main() {
 }
 
 /*
-1. FeaturePoint class -> struct
-2. liftProjection, distortion -> FeatureTracker 안으로 합병
-
------------------
-
 - readImage() 함수 작성 rosbag c++ api
 - mutex lock 사용방법
 - opencv draw features
